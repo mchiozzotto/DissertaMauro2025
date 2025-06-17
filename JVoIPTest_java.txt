@@ -1,0 +1,439 @@
+/**
+ * This is a LAB VoIP simulation - an application for JVoIP (Java Voice over IP)
+ * Adaptado pelo mestrando do arquivo de amostras da biblioteca Java JVoIP para fazer
+ * as chamadas Voz sobre IP a partir do ramal 1203 ou 1204 para o destinatário Raspberry IoT que contém a gravação de áudio WAV
+ * Copy/include the JVoIP.jar file to your project required libraries list!
+ * Demo API download: https://www.mizu-voip.com/Portals/0/Files/JVoIP.zip  mais adaptaçoes abaixo
+ * Para o experimento real
+ */
+
+package my.voip;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.text.SimpleDateFormat;
+import java.util.Properties;
+import webphone.SIPNotification;
+import webphone.SIPNotificationListener;
+import webphone.webphone;
+
+public class JVoIPTest {
+	webphone wobj = null;
+	static boolean answered = false;
+	long modifiedTime = 0;
+	long lastModifiedTime = 0;
+	
+	static String serverAddress;
+	static String username;
+	static String password;
+	static String callTo;
+	static String timeBeforeCallingSec;
+	static String timeBeforeHangingUpSec;
+	static String resultFilePath;
+	static String recordCommand;
+	static String logLevel;
+	
+	static int use_opusnb;
+	static int use_opuswb;
+	static int use_opusswb; 
+	static int use_opusuwb;
+	static int use_speex;
+	static int use_speexwb;
+	static int use_speexuwb; 
+	static int mos_max_1; 
+	static int mos_max_2; 
+	static int mos_max_3; 
+	static int mos_max_4; 
+	static int mos_max_5; 
+	
+	public JVoIPTest() {
+		Go();
+	}
+	/**
+	 * Início do end-point da Aplicação
+	 */
+	public static void main(String[] args) {
+		try {
+			new JVoIPTest();
+		}catch(Exception e) {System.out.println("Exception at main: "+e.getMessage()+"\r\n"+e.getStackTrace()); }
+	}
+	/**
+	 * This is the important function where all the real work is done.
+	 * In this example we start the JVoIP (a webphone instance), set parameters and make an outbound call.
+	 */
+	void Go()
+	{
+		loadProperties();
+		try{
+
+			//create a JVoIP instance (a webphone class instance)
+			Log("init...");			
+			wobj = new webphone(0); //the 0 parameter means that the SIP stack will not be started automatically. We will start it below with the API_Start() function (otherwise migth start with previous/cached settings)
+			//subscribe to notification events
+			MyNotificationListener listener = new MyNotificationListener(this);
+			wobj.API_SetNotificationListener(listener);
+			//set parameters
+			wobj.API_SetParameter("loglevel", Integer.valueOf(logLevel)); //for development you should set the loglevel to 5. for production you should set the loglevel to 1
+			wobj.API_SetParameter("logtoconsole", true); //if the loglevel is set to 5 then a log window will appear automatically. it can be disabled with this setting
+			//wobj.API_SetParameter("notificationevents", 4); //we will use notification event objects only, but no need to set because it is set automatically by API_SetNotificationListener
+			//wobj.API_SetParameter("transport", 2);  //the default transport for signaling is -1/auto (UDP with failover to TCP). Set to 0 if your server is listening on UDP only, 1 if you need TCP or to 2 if you need TLS
+			//wobj.API_SetParameter("proxyaddress", "x.x.x.x");  //set this only if you have a (outbound) proxy (which is different from the serveraddress)
+			//wobj.API_SetParameter("realm", "xxxx");  //your sip realm. set to your server logical SIP domain only if that is different from the serveraddress and your server doesn't accept the address as the realm/domain
+			wobj.API_SetParameter("serveraddress", serverAddress); //your sip server domain or IP:port (the port number must be set only if not the standard 5060)		
+			wobj.API_SetParameter("username", username);
+			wobj.API_SetParameter("password", password);
+						
+			// Offer only USE_OPUSSWB - SUPER WIDEBAND (24000 Hz)
+			// Don't offer ALL OTHER CODECS
+			wobj.API_SetParameter("use_gsm", 1);
+			
+			wobj.API_SetParameter("use_ilbc", 1);
+			
+			wobj.API_SetParameter("use_speex", use_speex);
+			wobj.API_SetParameter("use_speexwb", use_speexwb);
+			wobj.API_SetParameter("use_speexuwb", use_speexuwb);
+			
+			wobj.API_SetParameter("use_opusnb", use_opusnb);
+			wobj.API_SetParameter("use_opuswb", use_opuswb);
+			wobj.API_SetParameter("use_opusswb", use_opusswb);
+			wobj.API_SetParameter("use_opusuwb", use_opusuwb);
+
+			wobj.API_SetParameter("use_g7221", 1);
+			wobj.API_SetParameter("use_g7221uwb", 1);
+			wobj.API_SetParameter("use_g729", 1);
+			wobj.API_SetParameter("use_g726", 1);
+			
+			int callCounter = 1;
+			boolean firstCall = true;
+			while (true) {
+
+				// Use -1 if there is a single MOS result file being updated for each call
+				 int mos = getMOS(resultFilePath, -1);	
+				
+				// int mos = getMOS(resultFilePath, callCounter);
+				Thread.sleep(100);
+
+				if (modifiedTime != lastModifiedTime)
+				{
+					modifiedTime = lastModifiedTime;
+					
+					int bitRate = -1;
+
+					if (mos > -1 && mos <= mos_max_1 ) {
+						bitRate = 44000; 
+					} else if (mos > mos_max_1 && mos <= mos_max_2) {
+						bitRate = 48000; 			
+					} else if (mos > mos_max_2 && mos <= mos_max_3) {
+						bitRate = 50000;
+					} else if (mos > mos_max_3 && mos <= mos_max_4) {
+						bitRate = 50000;
+					} else if (mos > mos_max_4 && mos <= mos_max_5) {
+						bitRate = 50000;
+					} else if (mos > mos_max_5) {
+						bitRate = -1;
+					}
+					/// Parametro para alterar o BitRate de transmissão na próxima chamada:
+					wobj.API_SetParameter("opus_cfg_bitrate", bitRate);
+					// wobj.API_SetParameter("speex_cfg_bitrate", bitRate);
+
+					//start the SIP stack			
+					Log("Start call #" + callCounter + " MOS from TXT file = " + mos + " set bitRate to = " + bitRate);
+					callCounter ++;
+
+					wobj.API_Start();
+					if (firstCall) {
+						Thread.sleep(100);
+						firstCall = false;
+					} else {
+						Thread.sleep(Integer.valueOf(timeBeforeCallingSec)*1000); //optionally 13 seg + 4 ou 5 segpara o programa you might wait a bit for the sip stack to fully initialize (to make this more accurate and reduce the wait time, you might remove this sleep in your app and continue instead when you receive the SIPNotification.Start.START_SIP noification)				
+					}
+					/*
+		            //register to Sip server (optional)
+		            //if the serveraddress/username/password are set, then JVoIP will register automatically at API_Start so this is commented out (you can disable this behavior if you wish by setting the "register" parameter to 0)
+		            Log("registering...");
+		            wobj.API_Register();
+					 */
+					//Log("SIP stack Initialized. Press enter to make a call");
+					//WaitForEnterKeyPress();
+
+					//send a IM text message to evelin
+					//wobj.API_SendChat(-1, "evelin", "", "Hi!");
+					//make an outbound call
+
+					Log("calling...");
+					
+					wobj.API_Call( -1, callTo);
+
+					while(!answered) {				
+						Thread.sleep(150);    // Tempo de espera em mseg
+					}
+					//wait callIntervalSec for the next call
+					Thread.sleep(Integer.valueOf(timeBeforeHangingUpSec)*1000);
+					answered = false;		
+					
+					//once the call is connected, you can send DTMF messages like this
+					//wobj.API_Dtmf(-1, "5");
+				
+					//disconnect the call and stop the SIP stack 
+					Log("closing...");
+					wobj.API_Hangup(-1);  //disconnect the call
+					Thread.sleep(200);
+				}
+			}
+			//Log("Finished. Press enter to exit");
+			//WaitForEnterKeyPress();
+			//System.exit(0); //exit the JVM
+
+		}catch(Exception e) {Log("Exception at Go: "+e.getMessage()+"\r\n"+e.getStackTrace()); }
+	}
+	private int getMOS(String filePath, int fileNumber) {
+		String result;
+		Properties properties = null;
+		InputStream in;
+		try {
+			String fileNumberString = fileNumber < 0 ? "" : String.valueOf(fileNumber);
+	        Path file = Paths.get(filePath + File.separator + "result" + fileNumberString + ".txt" );
+			
+			BasicFileAttributes attr = Files.readAttributes(file, BasicFileAttributes.class);
+			lastModifiedTime = attr.lastModifiedTime().toMillis();
+			
+			result = new String(Files.readAllBytes(file), "UTF-8")
+					.trim().replaceAll("Prediction \\(MOS-LQO\\):  =", "")
+					.replaceAll("Prediction \\(Raw MOS, MOS-LQO\\):  = \\d\\.\\d\\d\\d\\s+", "");
+			
+			in = new ByteArrayInputStream(result.getBytes(StandardCharsets.UTF_8));
+			properties = new Properties();
+			properties.load(in);
+			in.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return Integer.valueOf(properties.getProperty("P.862").replace(".", ""));
+	}
+	
+	/**
+	 * Funçao auxiliar para simplificar o Log
+	 */
+	void Log(String msg)
+	{
+		System.out.println(msg);
+		//pass it also to JVoIP so it will be easier to follow the JVoIP logs:
+		if(wobj != null) { try{ wobj.API_Log(msg); } catch(Throwable e){} }
+	}
+	/**
+	 * Funçao auxiliar para apertar Button antes de continuar
+	 */
+	void WaitForEnterKeyPress()
+	{
+		try{
+			//skip existing (old) input
+			int avail = System.in.available();
+			if(avail > 0) System.in.read(new byte[avail]);
+		}catch(Exception e) {}
+		try{
+			//wait for enter press
+			while (true)
+			{
+				int ch = System.in.read();
+				if(ch == '\n') break;
+			}
+		}catch(Exception e) {}
+	}
+	
+	private static void loadProperties() {
+        Properties properties = new Properties();
+        try (InputStream input = new FileInputStream("config.properties")) {
+            properties.load(input);
+            serverAddress = properties.getProperty("serverAddress");
+        	username = properties.getProperty("username");
+        	password  = properties.getProperty("password");
+        	callTo  =  properties.getProperty("callTo");
+        	resultFilePath  = properties.getProperty("resultFilePath");
+        	recordCommand = properties.getProperty("recordCommand");
+        	timeBeforeCallingSec = properties.getProperty("timeBeforeCallingSec");
+        	timeBeforeHangingUpSec = properties.getProperty("timeBeforeHangingUpSec");
+        	logLevel = properties.getProperty("logLevel");
+        	
+        	use_opusnb = Integer.valueOf(properties.getProperty("use_opusnb"));
+        	use_opuswb = Integer.valueOf(properties.getProperty("use_opuswb"));
+        	use_opusswb = Integer.valueOf(properties.getProperty("use_opusswb"));
+        	use_opusuwb = Integer.valueOf(properties.getProperty("use_opusuwb"));
+        	
+        	use_speex = Integer.valueOf(properties.getProperty("use_speex"));
+        	use_speexwb = Integer.valueOf(properties.getProperty("use_speexwb"));
+        	use_speexuwb = Integer.valueOf(properties.getProperty("use_speexuwb"));
+        	
+        	mos_max_1 = Integer.valueOf(properties.getProperty("mos_max_1")); 
+        	mos_max_2 = Integer.valueOf(properties.getProperty("mos_max_2"));
+        	mos_max_3 = Integer.valueOf(properties.getProperty("mos_max_3"));
+        	mos_max_4 = Integer.valueOf(properties.getProperty("mos_max_4")); 
+        	mos_max_5 = Integer.valueOf(properties.getProperty("mos_max_5"));
+            
+            if (serverAddress == null) {
+                throw new IllegalArgumentException("serverAddress property not found in config.properties");
+            }
+            if (username == null) {
+                throw new IllegalArgumentException("username property not found in config.properties");
+            }
+            if (password == null) {
+                throw new IllegalArgumentException("password property not found in config.properties");
+            }          
+            if (callTo == null) {
+                throw new IllegalArgumentException("callTo property not found in config.properties");
+            }          
+            if (resultFilePath == null) {
+                throw new IllegalArgumentException("resultFilePath property not found in config.properties");
+            }          
+            if (recordCommand == null) {
+                throw new IllegalArgumentException("recordCommand property not found in config.properties");
+            }          
+            if (timeBeforeCallingSec == null) {
+                throw new IllegalArgumentException("timeBeforeCallingSec property not found in config.properties");
+            }          
+            if (timeBeforeHangingUpSec == null) {
+                throw new IllegalArgumentException("timeBeforeHangingUpSec property not found in config.properties");
+            }          
+            if (logLevel == null) {
+                throw new IllegalArgumentException("logLevel property not found in config.properties");
+            }    
+            if (use_opusnb == -1) {
+                throw new IllegalArgumentException("use_opusnb property not found in config.properties");
+            }     
+            if (use_opuswb == -1) {
+                throw new IllegalArgumentException("use_opuswb property not found in config.properties");
+            }     
+            if (use_opusswb == -1) {
+                throw new IllegalArgumentException("use_opusswb property not found in config.properties");
+            }     
+            if (use_opusuwb == -1) {
+                throw new IllegalArgumentException("use_opusuwb property not found in config.properties");
+            }    
+
+            if (use_speex == -1) {
+                throw new IllegalArgumentException("use_speex property not found in config.properties");
+            }     
+                
+            if (mos_max_1 == -1) {
+                throw new IllegalArgumentException("mos_max_1 property not found in config.properties");
+            }    
+            if (mos_max_2 == -1) {
+                throw new IllegalArgumentException("mos_max_2 property not found in config.properties");
+            }    
+            if (mos_max_3 == -1) {
+                throw new IllegalArgumentException("mos_max_3 property not found in config.properties");
+            }    
+            if (mos_max_4 == -1) {
+                throw new IllegalArgumentException("mos_max_4 property not found in config.properties");
+            }    
+            if (mos_max_5 == -1) {
+                throw new IllegalArgumentException("mos_max_5 property not found in config.properties");
+            }    
+        } catch (IOException e) {
+        	e.printStackTrace();
+        }
+    }
+}
+/**
+ * You will receive the notification events from JVoIP in this class by overriding the SIPNotificationListener base class member functions.
+ class MyNotificationListener extends SIPNotificationListener
+{
+	JVoIPTest app = null; //useful if we wish to refer to our main app class from here
+	Runtime run = Runtime.getRuntime();
+	public MyNotificationListener(JVoIPTest app_in) {
+		app = app_in;
+	}
+	void Log(String msg)
+	{
+		System.out.println(msg);
+
+		//pass it also to JVoIP so it will be easier to follow the JVoIP logs:
+		if(app != null && app.wobj != null) { try{ app.wobj.API_Log(msg); } catch(Throwable e){} }
+	}
+	//here are some examples about how to handle the notifications:
+
+	public void onAll(SIPNotification e) {
+		//we receive all notifications (also) here. we just print them from here
+		Log("\t\t\t"+e.getNotificationTypeText()+" notification received: " + e.toString());
+	}
+
+	//handle connection (REGISTER) state
+	public void onRegister( SIPNotification.Register e)
+	{
+		//check if/when we are registered to the SIP server
+		if(!e.getIsMain()) return; //we ignore secondary accounts here
+
+		switch(e.getStatus())
+		{
+		case SIPNotification.Register.STATUS_INPROGRESS: Log("\tRegistering..."); break;
+		case SIPNotification.Register.STATUS_SUCCESS: Log("\tRegistered successfully."); break;
+		case SIPNotification.Register.STATUS_FAILED: Log("\tRegister failed because "+e.getReason()); break;
+		case SIPNotification.Register.STATUS_UNREGISTERED: Log("\tUnregistered."); break;
+		}
+	}
+
+	//an example for STATUS handling
+	public void onStatus( SIPNotification.Status e)
+	{
+		if(e.getLine() == -1) return; //we are ignoring the global state here (but you might check only the global state instead or look for the particular lines separately if you must handle multiple simultaneous calls)
+
+		//log call state
+		if(e.getStatus() >= SIPNotification.Status.STATUS_CALL_SETUP && e.getStatus() <= SIPNotification.Status.STATUS_CALL_FINISHED)
+		{
+			Log("\tCall state is: "+ e.getStatusText());
+		}
+
+		//catch outgoing call connect
+		if(e.getStatus() == SIPNotification.Status.STATUS_CALL_CONNECT && e.getEndpointType() == SIPNotification.Status.DIRECTION_OUT)
+		{
+			Log("\tOutgoing call connected to "+ e.getPeer());
+			app.answered = true;
+			
+		
+		}
+		//catch incoming calls
+		else if(e.getStatus() == SIPNotification.Status.STATUS_CALL_RINGING && e.getEndpointType() == SIPNotification.Status.DIRECTION_IN)
+		{
+			Log("\tIncoming call from "+ e.getPeerDisplayname());
+
+			//auto accepting the incoming call (instead of auto accept, you might present an Accept/Reject button for the user which will call API_Accept / API_Reject)
+			app.wobj.API_Accept(e.getLine());
+		}
+		//catch incoming call connect
+		else if(e.getStatus() == SIPNotification.Status.STATUS_CALL_CONNECT && e.getEndpointType() == SIPNotification.Status.DIRECTION_IN)
+		{
+			Log("\tIncoming call connected");
+		}
+
+	}
+
+	//print important events (EVENT)
+	public void onEvent( SIPNotification.Event e)
+	{
+		Log("\tImportant event: "+e.getText());
+	}
+
+	//wait for SIP start started before any other SIP stack function call (such as call attempts)
+	public void onStart( SIPNotification.Start e)
+	{
+		if(e.getWhat() == SIPNotification.Start.START_SIP)
+		{
+			Log("\tSIP stack started"); //you should do any SIP operation only after this notification have been triggered (such as API_Call or API_SendChat)
+		}
+	}
+	//IM handling
+	public void onChat( SIPNotification.Chat e)
+	{
+		Log("\tMessage from "+e.getPeer()+": "+e.getMsg());
+
+		//auto answer
+		app.wobj.API_SendChat(e.getPeer(),"Received");
+	}
+}
