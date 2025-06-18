@@ -1,0 +1,24 @@
+UBUNTU:
+
+route add -host 192.168.1.103 gw 192.168.1.12
+route add -net 192.168.10.0 netmask 255.255.255.0 gw 192.168.1.103
+route add -net 192.168.15.0 netmask 255.255.255.0 gw 192.168.1.12
+route -n
+
+
+FREEPBX15:
+
+route add -host 192.168.1.103 gw 192.168.1.12
+route add -net 192.168.10.0 netmask 255.255.255.0 gw 192.168.1.103
+route add -net 192.168.15.0 netmask 255.255.255.0 gw 192.168.1.12
+
+EVE-NG (Linux routing table) virtualizado (2 bridge interfaces):
+
+route add -host 192.168.1.3 gw 192.168.1.12
+route add -host 192.168.1.103 gw 192.168.1.12
+route add -net 192.168.10.0 netmask 255.255.255.0 gw 192.168.15.1
+route add -net 192.168.15.100 gw 192.168.1.12
+
+Os endereços IP=192.168.1.12 (subrede A) e IP=192.168.15.1
+São das portas virtulizadas do VMWare
+e o endereço 192.168.1.103 é do Router 2 interno ao EVE-NG
