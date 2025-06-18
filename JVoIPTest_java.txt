@@ -1,10 +1,11 @@
 /**
  * This is a LAB VoIP simulation - an application for JVoIP (Java Voice over IP)
  * Adaptado pelo mestrando do arquivo de amostras da biblioteca Java JVoIP para fazer
- * as chamadas Voz sobre IP a partir do ramal 1203 ou 1204 para o destinatário Raspberry IoT que contém a gravação de áudio WAV
+ * as chamadas Voz sobre IP a partir do ramal 1202 ou 1201 para o destinatário Raspberry IoT (ramal 1203) que contém a gravação de áudio "Maletestlong.WAV"
  * Copy/include the JVoIP.jar file to your project required libraries list!
  * Demo API download: https://www.mizu-voip.com/Portals/0/Files/JVoIP.zip  mais adaptaçoes abaixo
- * Para o experimento real
+ * Para o experimento real do Laboratório VIoT (2025)
+ * Alterações pelo autor - Mauro Chiozzotto
  */
 
 package my.voip;
@@ -120,7 +121,8 @@ public class JVoIPTest {
 				
 				// int mos = getMOS(resultFilePath, callCounter);
 				Thread.sleep(100);
-
+				// Tabela de Tomada de decisão do Novo Bitrate em bps, os parâmetros
+                                // mos_max_1 até mos_max_5 estão no Configurador File: "config.properties"
 				if (modifiedTime != lastModifiedTime)
 				{
 					modifiedTime = lastModifiedTime;
