@@ -5,6 +5,8 @@ Na Escola Politécnica da USP
 Título: "APLICAÇÃO DE VOIP USANDO DISPOSITIVOS IoT INTELIGENTES EM UM SMART BUILDING e
                                    E COMPUTAÇÃO EDGE"
 
+   A lista de Materias completa e arquitetura adotada estão descritas em detalhe no Capítulo 3 nas páginas #41 até #53 da Dissertação (versão 2/6/2025), complementadas com descriçoes e tabelas de roteamento dos Apêndices A e B.
+
 E poderá ser usado para consulta, reconstrução, reprodução ou melhorias nos módulos de software do Laboratório de Voice over IoT.
 
 O Arquivo WAV que roda em "Loop infinito" de voz masculina de 17 s, também foi adicionado na lista de arquivos:
