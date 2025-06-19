@@ -9,3 +9,7 @@ O Arquivo WAV que roda em "Loop infinito" de voz masculina de 17 s, também foi 
 
 Os outros programas ou scripts usados estão documentados no Apêndice A da Dissertação (Versão original de 2/Junho/2025)
 #
+
+Etapa 2 em construção, poderá substituir o JVoIP (shareware) pelo PJSSIP e sua library PJSUA para manutenção sem uso de licenças do JVoIP (shareware).
+
+#
