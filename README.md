@@ -1,6 +1,7 @@
 Este Projeto no Github contém os códigos fontes integrais
-da Dissertação de Mestrado (24 de JUNHO/2025) de Mauro Chiozzotto
-Na Escola Politécnica da USP
+da Dissertação de Mestrado de Mauro Chiozzotto - da  Escola Politécnica da USP, São Paulo, SP - BRAZIL
+Versão corrigida da Dissertação, publicada e homologada em 14/Agosto/2025.
+Autor - mchiozzo@alumni.usp.br
 
 Título: "APLICAÇÃO DE VOIP USANDO DISPOSITIVOS IoT INTELIGENTES EM UM SMART BUILDING e
                                    E COMPUTAÇÃO EDGE"
