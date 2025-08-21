@@ -6,11 +6,11 @@ Autor - mchiozzo@alumni.usp.br
 Título: "APLICAÇÃO DE VOIP USANDO DISPOSITIVOS IoT INTELIGENTES EM UM SMART BUILDING e
                                    E COMPUTAÇÃO EDGE"
 
-   A lista de Materias completa e arquitetura adotada estão descritas em detalhe no Capítulo 3 nas páginas #41 até #53 da Dissertação (versão 2/6/2025), complementadas com descriçoes e tabelas de roteamento dos Apêndices A e B.
+   A lista de Materiais completa e arquitetura adotada estão descritas em detalhe no Capítulo 3 nas páginas #42 até #56 da Dissertação (versão 12/Agosto/2025), complementadas com descrições e tabelas de roteamento dos Apêndices A e B.
 
 E poderá ser usado para consulta, reconstrução, reprodução ou melhorias nos módulos de software do Laboratório de Voice over IoT.
 
-O Arquivo WAV que roda em "Loop infinito" de voz masculina de 17 s, também foi adicionado na lista de arquivos:
+O Arquivo WAV que roda em "Loop infinito" de voz masculina de 17 seg., também foi adicionado na lista de arquivos:
 "Maletestloing17s.wav"
 
 Os outros programas ou scripts usados estão documentados no Apêndice A da Dissertação (Versão original de 2/Junho/2025)
